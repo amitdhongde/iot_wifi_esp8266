@@ -1,4 +1,4 @@
-# Home Automation with ESP8266 NodeMCU, WiFi based ON-OFF Relay
+# ON-OFF Relay Automation with ESP8266 NodeMCU over WiFi Network
 This is a simple Home Automation project using the DIY micro-controller (ESP8266) with firmware developed over arduino. This setup can be used to control the relay from any web browser using the wireless network.
 
 ## Step 1: Gather Materials
