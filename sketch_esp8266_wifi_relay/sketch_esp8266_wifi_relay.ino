@@ -1,82 +1,147 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
 
+#include "wifi_config.h" //Custom WIFI Configuration
 #include "index.h" //Custom HTML webpage contents
 
-#define PIN_D1 16 //Near power LED light
-#define PIN_D2 4
-#define PIN_D3 0
-#define PIN_D4 2 //Near antenna LED light
-#define PIN_D5 16 //Near power LED light
-#define PIN_D6 4
-#define PIN_D7 0
-#define PIN_D8 2 //Near antenna LED light
-#define PIN_D9 16 //Near power LED light
-#define PIN_D10 4
 
 /**
- * Custom Structure
- **/
+ * Basic Declarations and Macros
+ */
+#define ARR_LEN(x) (sizeof(x) / sizeof((x)[0]))
+
+#define TRUE  1
+#define FALSE 0
+#define CONST_WIFI_IOT_ON "btn-iot-on"
+#define CONST_WIFI_IOT_OFF "btn-iot-off"
+#define CONST_WIFI_IOT_DISABLED "btn-iot-disabled"
+
+
+/**
+ * Constant variables
+ */
+const int CONST_DEFAULT_LED = 13; //Near antenna LED light
+const char* CONST_WIFI_SSID = WIFI_SSID;
+const char* CONST_WIFI_PWD = WIFI_PWD;
+
+
+/**
+ * Custom Data Structure
+ */
 typedef struct {
-  int* pin;
+  String pin_name;
   int pin_code;
-  char* pin_mapper;
+  String pin_mapper;
+  int is_active;
 } DigitalPinData;
 
-//ESP8266 NodeMCU Pin Confuguration
-/*
-const DigitalPinData PIN_DATA[] = {
-  { PIN_D0, 16, STATUS_BTN1 },
-  { PIN_D1,  5, STATUS_BTN2 },
-  { PIN_D2,  4, STATUS_BTN3 },
-  { PIN_D3,  0, STATUS_BTN4 },
-  { PIN_D4,  2, STATUS_BTN5 },
-  { PIN_D5, 16, STATUS_BTN6 },
-  { PIN_D6, 16, STATUS_BTN7 },
-  { PIN_D7, 16, STATUS_BTN8 },
-  { PIN_D8, 16, STATUS_BTN9 },
-  { PIN_D9, 16, STATUS_BTN10 }
+
+DigitalPinData PIN_DATA[] = {
+  { "[BTN_IOT_0]", 16, CONST_WIFI_IOT_OFF, TRUE },
+  { "[BTN_IOT_1]",  5, CONST_WIFI_IOT_OFF, TRUE },
+  { "[BTN_IOT_2]",  4, CONST_WIFI_IOT_OFF, TRUE },
+  { "[BTN_IOT_3]",  0, CONST_WIFI_IOT_OFF, TRUE },
+  { "[BTN_IOT_4]",  2, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_5]", 14, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_6]", 12, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_7]", 13, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_8]", 15, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_9]",  3, CONST_WIFI_IOT_OFF, FALSE }
 };
-*/
 
-const char* _CONST_WIFI_SSID = "<ENTER_WIFI_SID>";
-const char* _CONST_WIFI_PWD = "<ENTER_WIFI_PASSWORD>";
-
-const char* _CONST_WIFI_IOT_ON  = "btn-iot-on";
-const char* _CONST_WIFI_IOT_OFF = "btn-iot-off";
-
-String STATUS_BTN1,STATUS_BTN2,STATUS_BTN3,STATUS_BTN4,STATUS_BTN5,
-       STATUS_BTN6,STATUS_BTN7,STATUS_BTN8,STATUS_BTN9,STATUS_BTN10;
 
 /**
  * Create an instance of the server
  * specify the port to listen on as an argument
- **/
-//WiFiServer server(80);
+ */
 ESP8266WebServer server(80);
+
+
+/**
+ * Sketch Start
+ */
+void setup() {
+  //Preset the default led, before connecting
+  pinMode(CONST_DEFAULT_LED, OUTPUT);
+  digitalWrite(CONST_DEFAULT_LED, 0);
+  
+  //Set Baud rate
+  Serial.begin(115200);
+  delay(10);
+
+  //Connect with WiFi
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(CONST_WIFI_SSID, CONST_WIFI_PWD);
+  Serial.println("");
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  } //Loop ends
+
+  //Connection successful
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(CONST_WIFI_SSID);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  if (MDNS.begin("esp8266")) {
+    Serial.println("MDNS responder started");
+  } //End if
+
+  //Route configurations
+  server.on("/", handleRoot);
+  server.on("/esp8266", handleForm);
+  server.onNotFound(handleNotFound); //Not found event
+
+  //Start the server
+  server.begin();
+  Serial.println("HTTP server started");
+} //Function ends
+
+
+void loop() {
+  server.handleClient();
+  MDNS.update();
+} //Function ends
 
 
 /**
  * This routine is executed on opening the browser with IP address
  **/
 void handleRoot() {
-  String html_custom = CUSTOM_HTML_PAGE_CONNECTED; //Read HTML contents
+  //Read HTML contents
+  String html_custom = FPSTR(CUSTOM_HTML_PAGE_CONNECTED);
+  
+  //Get the length of the array
+  size_t arrlen = ARR_LEN(PIN_DATA);
 
-  //Update field data
-  html_custom.replace("[BTN_IOT_1]",  STATUS_BTN1);
-  html_custom.replace("[BTN_IOT_2]",  STATUS_BTN2);
-  html_custom.replace("[BTN_IOT_3]",  STATUS_BTN3);
-  html_custom.replace("[BTN_IOT_4]",  STATUS_BTN4);
-  html_custom.replace("[BTN_IOT_5]",  STATUS_BTN5);
-  html_custom.replace("[BTN_IOT_6]",  STATUS_BTN6);
-  html_custom.replace("[BTN_IOT_7]",  STATUS_BTN7);
-  html_custom.replace("[BTN_IOT_8]",  STATUS_BTN8);
-  html_custom.replace("[BTN_IOT_9]",  STATUS_BTN9);
-  html_custom.replace("[BTN_IOT_10]", STATUS_BTN10);
+  //Loop the array and update field data
+  for(int i=0;i<arrlen;i++) {
+    //Check if the button is enabled
+    if (PIN_DATA[i].is_active==TRUE) {
+      html_custom.replace(PIN_DATA[i].pin_name, PIN_DATA[i].pin_mapper);
 
-  server.send(200, "text/html", html_custom); //Send web page
+      //Set the pin value
+      pinMode(PIN_DATA[i].pin_code, OUTPUT);
+      digitalWrite(PIN_DATA[i].pin_code, ((PIN_DATA[i].pin_mapper==CONST_WIFI_IOT_ON))?HIGH:LOW);
+    } else { 
+      html_custom.replace(PIN_DATA[i].pin_name, CONST_WIFI_IOT_DISABLED);
+
+      //Set the pin value to LOW
+      pinMode(PIN_DATA[i].pin_code, OUTPUT);
+      digitalWrite(PIN_DATA[i].pin_code, LOW);
+    } //End if
+  } //Loop ends
+
+  //Send web page
+  server.send(200, "text/html", html_custom); 
 } //Function ends
 
 
@@ -95,133 +160,31 @@ void handleForm() {
   //IOT button form value
   String iot_button = server.arg("iot_button");
 
+  //Selected Pin Data
   int intIotButtonId = iot_button.toInt();
-  bool isIotButtonOff = true;
+  DigitalPinData selPinData = PIN_DATA[intIotButtonId];
 
-  switch(intIotButtonId) {
-    case 1:
-      //Code here
-      pinMode(PIN_D1, OUTPUT);
-      isIotButtonOff=!(digitalRead(PIN_D1)>0);
-      STATUS_BTN1=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      digitalWrite(PIN_D1, (isIotButtonOff)?HIGH:LOW);
-      break;
+  //Check of the pin is active
+  if (selPinData.is_active == TRUE) {
+    //Read Pin value
+    pinMode(selPinData.pin_code, OUTPUT);
+    int isIotButtonOff=(digitalRead(selPinData.pin_code)>0)?1:0;
 
-    case 2:
-      //Code here
-      pinMode(PIN_D2, OUTPUT);
-      isIotButtonOff=!(digitalRead(PIN_D2)>0);
-      STATUS_BTN2=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      digitalWrite(PIN_D2, (isIotButtonOff)?HIGH:LOW);
-      break;
+    //Toggle the pin status
+    int btnToggleState = (isIotButtonOff==0)?1:0;
+    String btnState=btnToggleState?CONST_WIFI_IOT_ON:CONST_WIFI_IOT_OFF;
+    digitalWrite(selPinData.pin_code, (btnToggleState)?HIGH:LOW);
 
-    case 3:
-      //Code here
-      pinMode(PIN_D3, OUTPUT);
-      isIotButtonOff=!(digitalRead(PIN_D3)>0);
-      STATUS_BTN3=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      digitalWrite(PIN_D3, (isIotButtonOff)?HIGH:LOW);
-      break;
+    //Set pint status
+    selPinData.pin_mapper=btnState;
+  } //End if
 
-    case 4:
-      //Code here
-      pinMode(PIN_D4, OUTPUT);
-      isIotButtonOff=!(digitalRead(PIN_D4)>0);
-      STATUS_BTN4=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      digitalWrite(PIN_D4, (isIotButtonOff)?HIGH:LOW);
-      break;
+  //Update Array
+  PIN_DATA[intIotButtonId]=selPinData;
 
-    case 5:
-      //Code here
-      pinMode(PIN_D5, OUTPUT);
-      isIotButtonOff=!(digitalRead(PIN_D5)>0);
-      STATUS_BTN5=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      digitalWrite(PIN_D5, (isIotButtonOff)?HIGH:LOW);
-      break;
-
-    case 6:
-      //Code here
-      STATUS_BTN6=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      break;
-
-    case 7:
-      //Code here
-      STATUS_BTN7=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      break;
-
-    case 8:
-      //Code here
-      STATUS_BTN8=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      break;
-
-    case 9:
-      //Code here
-      STATUS_BTN9=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      break;
-
-    case 10:
-      //Code here
-      STATUS_BTN10=isIotButtonOff?_CONST_WIFI_IOT_ON:_CONST_WIFI_IOT_OFF;
-      break;
-
-    default:
-      //Do nothing
-      break;
-  } //End switch
-
+  //Redirect the page back
   server.sendHeader("Location", "/");
   server.send(302, "text/plain", "Updated-- Press Back Button");  //This Line Keeps It on Same Page
    
   delay(500);
-} //Function ends
-
-
-/**
- * Sketch Setup
- **/
-void setup(void) {
-  Serial.begin(115200);
-  delay(10);
-
-  //Preset values
-  STATUS_BTN1=STATUS_BTN2=STATUS_BTN3=STATUS_BTN4=STATUS_BTN5=_CONST_WIFI_IOT_OFF;
-  STATUS_BTN6=STATUS_BTN7=STATUS_BTN8=STATUS_BTN9=STATUS_BTN10=_CONST_WIFI_IOT_OFF;
-
-  // prepare GPIO2
-  pinMode(PIN_D4, OUTPUT);
-  digitalWrite(PIN_D4, LOW);
-
-  //Connect to WiFi network
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(_CONST_WIFI_SSID);
-
-  //WiFi Settings
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(_CONST_WIFI_SSID, _CONST_WIFI_PWD);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-
-  //Server configurations
-  server.on("/", handleRoot);
-  server.on("/esp8266", handleForm);
-  server.onNotFound(handleNotFound); //Not found event
-
-  //Start the server
-  server.begin();
-  Serial.println("Server started");
-
-  // Print the IP address
-  Serial.println(WiFi.localIP());
-} //Function ends
-
-
-void loop(void) {
-  server.handleClient();
 } //Function ends

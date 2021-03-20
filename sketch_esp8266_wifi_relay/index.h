@@ -1,4 +1,6 @@
-const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = R"=====(
+const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = 
+R"=====(
+<!DOCTYPE html>
 <html>
     <head>
         <title>ESP8266 Automation</title>
@@ -8,6 +10,10 @@ const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = R"=====(
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
         <style>
+            .col-centered {
+              float: none;
+              margin: 0 auto;
+            }
             .btn:focus, .btn:active:focus {
                 outline: none;
             }
@@ -38,6 +44,9 @@ const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = R"=====(
             }
             .btn.btn-iot.btn-iot-on {}
             .btn.btn-iot.btn-iot-off {}
+            .btn.btn-iot.btn-iot-disabled {
+                display: none;
+            }
             .btn.btn-iot.btn-iot-on span:before {
                 content: "\e084";
                 color:rgb(28, 161, 16);
@@ -45,6 +54,19 @@ const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = R"=====(
             .btn.btn-iot.btn-iot-off span:before {
                 content: "\e083";
                 color:#d61b1b;
+            }
+            .btn.btn-iot.btn-iot-disabled span:before {
+                content: "\e017";
+                color:#a5a5a5;
+            }
+            .btn.btn-iot.btn-iot-on .btn-label:after {
+                content: 'on';
+            }
+            .btn.btn-iot.btn-iot-off .btn-label:after {
+                content: 'off';
+            }
+            .btn.btn-iot.btn-iot-disabled .btn-label:after {
+                content: 'disabled';
             }
         </style>
     </head>
@@ -56,62 +78,62 @@ const char CUSTOM_HTML_PAGE_CONNECTED[] PROGMEM = R"=====(
 
             <div class="row">
                 <form method="post" action="/esp8266">
-                    <div class="col-md-10 col-md-offset-1">
-                        <button type="submit" name="iot_button" value="1" class="btn btn-lg btn-iot [BTN_IOT_1]">
+                    <div class="col-md-9 col-centered text-center">
+                        <button type="submit" name="iot_button" value="0" class="btn btn-lg btn-iot [BTN_IOT_0]">
                             <p class="iot-switch-no">1</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
-                            <p>on</p>
+                            <p class="btn-label"></p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="2" class="btn btn-lg btn-iot [BTN_IOT_2]">
+                        <button type="submit" name="iot_button" value="1" class="btn btn-lg btn-iot [BTN_IOT_1]">
                             <p class="iot-switch-no">2</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="3" class="btn btn-lg btn-iot [BTN_IOT_3]">
+                        <button type="submit" name="iot_button" value="2" class="btn btn-lg btn-iot [BTN_IOT_2]">
                             <p class="iot-switch-no">3</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="4" class="btn btn-lg btn-iot [BTN_IOT_4]">
+                        <button type="submit" name="iot_button" value="3" class="btn btn-lg btn-iot [BTN_IOT_3]">
                             <p class="iot-switch-no">4</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="5" class="btn btn-lg btn-iot [BTN_IOT_5]">
+                        <button type="submit" name="iot_button" value="4" class="btn btn-lg btn-iot [BTN_IOT_4]">
                             <p class="iot-switch-no">5</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="6" class="btn btn-lg btn-iot [BTN_IOT_6]">
+                        <button type="submit" name="iot_button" value="5" class="btn btn-lg btn-iot [BTN_IOT_5]">
                             <p class="iot-switch-no">6</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="7" class="btn btn-lg btn-iot [BTN_IOT_7]">
+                        <button type="submit" name="iot_button" value="6" class="btn btn-lg btn-iot [BTN_IOT_6]">
                             <p class="iot-switch-no">7</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="8" class="btn btn-lg btn-iot [BTN_IOT_8]">
+                        <button type="submit" name="iot_button" value="7" class="btn btn-lg btn-iot [BTN_IOT_7]">
                             <p class="iot-switch-no">8</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="9" class="btn btn-lg btn-iot [BTN_IOT_9]">
+                        <button type="submit" name="iot_button" value="8" class="btn btn-lg btn-iot [BTN_IOT_8]">
                             <p class="iot-switch-no">9</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
                         </button>
 
-                        <button type="submit" name="iot_button" value="10" class="btn btn-lg btn-iot [BTN_IOT_10]">
+                        <button type="submit" name="iot_button" value="9" class="btn btn-lg btn-iot [BTN_IOT_9]">
                             <p class="iot-switch-no">10</p>
                             <span class="glyphicon" aria-hidden="true"></span> 
                             <p>off</p>
