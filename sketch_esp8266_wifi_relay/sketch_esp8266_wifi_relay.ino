@@ -1,3 +1,11 @@
+/**
+ * This program is developed primarily for Home Automation project.
+ * 
+ * The code uses the Node MCU 8266 Dev Board for this project.
+ * 
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ESP8266WiFi.h>
@@ -24,10 +32,9 @@
 /**
  * Constant variables
  */
-const int CONST_DEFAULT_LED = 13; //Near antenna LED light
+const int CONST_DEFAULT_LED = LED_BUILTIN; //As configured in Arduino
 const char* CONST_WIFI_SSID = WIFI_SSID;
 const char* CONST_WIFI_PWD = WIFI_PWD;
-
 
 /**
  * Custom Data Structure
@@ -39,13 +46,19 @@ typedef struct {
   int is_active;
 } DigitalPinData;
 
-
+/**
+ * The array used for configuration
+ * Elem1 = HTML TEXT KEY
+ * Elem2 = ESP 8266 pin code
+ * Elem3 = Status of Pin (ON/OFF). Also sets default status
+ * Elem4 = Is Active Pin for usuage
+ */
 DigitalPinData PIN_DATA[] = {
-  { "[BTN_IOT_0]", 16, CONST_WIFI_IOT_OFF, TRUE },
+  { "[BTN_IOT_0]", 16, CONST_WIFI_IOT_OFF, FALSE },
   { "[BTN_IOT_1]",  5, CONST_WIFI_IOT_OFF, TRUE },
   { "[BTN_IOT_2]",  4, CONST_WIFI_IOT_OFF, TRUE },
   { "[BTN_IOT_3]",  0, CONST_WIFI_IOT_OFF, TRUE },
-  { "[BTN_IOT_4]",  2, CONST_WIFI_IOT_OFF, FALSE },
+  { "[BTN_IOT_4]",  2, CONST_WIFI_IOT_OFF, TRUE },
   { "[BTN_IOT_5]", 14, CONST_WIFI_IOT_OFF, FALSE },
   { "[BTN_IOT_6]", 12, CONST_WIFI_IOT_OFF, FALSE },
   { "[BTN_IOT_7]", 13, CONST_WIFI_IOT_OFF, FALSE },
@@ -53,6 +66,10 @@ DigitalPinData PIN_DATA[] = {
   { "[BTN_IOT_9]",  3, CONST_WIFI_IOT_OFF, FALSE }
 };
 
+/**
+ * Set the WiFi connection blink status 
+ */
+int WIFI_CONNECTING_STATE = LOW;
 
 /**
  * Create an instance of the server
@@ -67,7 +84,7 @@ ESP8266WebServer server(80);
 void setup() {
   //Preset the default led, before connecting
   pinMode(CONST_DEFAULT_LED, OUTPUT);
-  digitalWrite(CONST_DEFAULT_LED, 0);
+  digitalWrite(CONST_DEFAULT_LED, WIFI_CONNECTING_STATE);
   
   //Set Baud rate
   Serial.begin(115200);
@@ -80,7 +97,14 @@ void setup() {
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
+    //Set the blink status
+    WIFI_CONNECTING_STATE = (WIFI_CONNECTING_STATE==LOW)?HIGH:LOW;
+    digitalWrite(CONST_DEFAULT_LED, WIFI_CONNECTING_STATE);
+
+    //Add delay
     delay(500);
+
+    //Serial monitor status
     Serial.print(".");
   } //Loop ends
 
@@ -90,6 +114,8 @@ void setup() {
   Serial.println(CONST_WIFI_SSID);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  Serial.print("MAC: ");
+  Serial.println(WiFi.macAddress());
 
   if (MDNS.begin("esp8266")) {
     Serial.println("MDNS responder started");
@@ -157,6 +183,9 @@ void handleNotFound() {
  * This routine is executed on webform submit
  **/
 void handleForm() {
+  //Switch-on the default LED
+  digitalWrite(CONST_DEFAULT_LED, HIGH);
+  
   //IOT button form value
   String iot_button = server.arg("iot_button");
 
@@ -187,4 +216,7 @@ void handleForm() {
   server.send(302, "text/plain", "Updated-- Press Back Button");  //This Line Keeps It on Same Page
    
   delay(500);
+
+  //Switch-off the LED
+  digitalWrite(CONST_DEFAULT_LED, LOW);
 } //Function ends
